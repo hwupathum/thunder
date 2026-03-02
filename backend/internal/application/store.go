@@ -44,6 +44,7 @@ type oAuthConfig struct {
 	Scopes                  []string            `json:"scopes,omitempty"`
 	UserInfo                *userInfoConfig     `json:"user_info,omitempty"`
 	ScopeClaims             map[string][]string `json:"scope_claims,omitempty"`
+	SigningKeyID            string              `json:"signing_key_id,omitempty"`
 }
 
 // oAuthTokenConfig represents the OAuth token configuration structure for JSON marshaling/unmarshaling.
@@ -308,6 +309,7 @@ func (st *applicationStore) GetOAuthApplication(clientID string) (*model.OAuthAp
 		Scopes:                  oAuthConfig.Scopes,
 		UserInfo:                userInfoConfig,
 		ScopeClaims:             scopeClaims,
+		SigningKeyID:            oAuthConfig.SigningKeyID,
 	}, nil
 }
 
@@ -548,6 +550,9 @@ func getOAuthConfigJSONBytes(inboundAuthConfig model.InboundAuthConfigProcessedD
 
 	// Handle ScopeClaims config
 	oauthConfig.ScopeClaims = inboundAuthConfig.OAuthAppConfig.ScopeClaims
+
+	// Include signing key ID if present
+	oauthConfig.SigningKeyID = inboundAuthConfig.OAuthAppConfig.SigningKeyID
 
 	oauthConfigJSONBytes, err := json.Marshal(oauthConfig)
 	if err != nil {
@@ -958,6 +963,7 @@ func buildOAuthInboundAuthConfig(row map[string]interface{}, basicApp model.Basi
 			Scopes:                  oauthConfig.Scopes,
 			UserInfo:                userInfoConfig,
 			ScopeClaims:             scopeClaims,
+			SigningKeyID:            oauthConfig.SigningKeyID,
 		},
 	}
 	return inboundAuthConfig, nil

@@ -25,6 +25,34 @@ import (
 	"strings"
 )
 
+// JWTHeader represents the decoded JWT header.
+type JWTHeader struct {
+	Algorithm string `json:"alg"`
+	Type      string `json:"typ"`
+	KeyID     string `json:"kid"`
+}
+
+// DecodeJWTHeader decodes a JWT header without verifying the signature.
+// This is useful for integration tests to validate the JWT header content (e.g. kid, alg).
+func DecodeJWTHeader(token string) (*JWTHeader, error) {
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid JWT format: expected 3 parts, got %d", len(parts))
+	}
+
+	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode JWT header: %w", err)
+	}
+
+	var header JWTHeader
+	if err := json.Unmarshal(headerBytes, &header); err != nil {
+		return nil, fmt.Errorf("failed to parse JWT header: %w", err)
+	}
+
+	return &header, nil
+}
+
 // JWTClaims represents the decoded JWT claims.
 type JWTClaims struct {
 	Sub       string                 `json:"sub"`

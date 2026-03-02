@@ -68,6 +68,7 @@ type OAuthAppConfig struct {
 	Token                   *OAuthTokenConfig   `json:"token,omitempty"`
 	ScopeClaims             map[string][]string `json:"scope_claims,omitempty"`
 	UserInfo                *UserInfoConfig     `json:"user_info,omitempty"`
+	SigningKeyID            string              `json:"signing_key_id,omitempty"`
 }
 
 // OAuthTokenConfig represents the OAuth token configuration.

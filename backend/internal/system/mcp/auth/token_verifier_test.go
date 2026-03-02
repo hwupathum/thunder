@@ -132,6 +132,18 @@ func (m *MockJWTService) VerifyJWTSignatureWithJWKS(
 	return args.Get(0).(*serviceerror.ServiceError)
 }
 
+// GenerateJWTWithKey is required to implement jwt.JWTServiceInterface.
+func (m *MockJWTService) GenerateJWTWithKey(
+	sub, aud, iss string,
+	validityPeriod int64,
+	claims map[string]interface{},
+	typ string,
+	key string,
+) (string, int64, *serviceerror.ServiceError) {
+	args := m.Called(sub, aud, iss, validityPeriod, claims, typ, key)
+	return args.String(0), args.Get(1).(int64), args.Get(2).(*serviceerror.ServiceError)
+}
+
 type TokenVerifierTestSuite struct {
 	suite.Suite
 }

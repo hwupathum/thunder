@@ -247,6 +247,13 @@ var (
 		Error:            "Cannot modify declarative resource",
 		ErrorDescription: "The application is declarative and cannot be modified or deleted",
 	}
+	// ErrorInvalidSigningKeyID is the error returned when an unknown signing key ID is provided.
+	ErrorInvalidSigningKeyID = serviceerror.ServiceError{
+		Type:             serviceerror.ClientErrorType,
+		Code:             "APP-1031",
+		Error:            "Invalid signing key ID",
+		ErrorDescription: "The specified signing_key_id does not correspond to any defined signing key",
+	}
 )
 
 // Server errors for application operations.

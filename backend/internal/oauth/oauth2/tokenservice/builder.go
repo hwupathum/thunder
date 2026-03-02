@@ -40,6 +40,14 @@ type tokenBuilder struct {
 	jwtService jwt.JWTServiceInterface
 }
 
+// resolveSigningKeyID returns the per-app signing key ID, or "" to use the global preferred key.
+func resolveSigningKeyID(oauthApp *appmodel.OAuthAppConfigProcessedDTO) string {
+	if oauthApp == nil {
+		return ""
+	}
+	return oauthApp.SigningKeyID
+}
+
 // NewTokenBuilder creates a new TokenBuilder instance.
 func newTokenBuilder(jwtService jwt.JWTServiceInterface) TokenBuilderInterface {
 	return &tokenBuilder{
@@ -73,13 +81,14 @@ func (tb *tokenBuilder) BuildAccessToken(ctx *AccessTokenBuildContext) (*oauth2m
 		ClaimsLocales:  ctx.ClaimsLocales,
 	}
 
-	token, iat, err := tb.jwtService.GenerateJWT(
+	token, iat, err := tb.jwtService.GenerateJWTWithKey(
 		ctx.Subject,
 		ctx.Audience,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		jwtClaims,
 		jwt.TokenTypeAccessToken,
+		resolveSigningKeyID(ctx.OAuthApp),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate access token: %v", err)
@@ -212,13 +221,14 @@ func (tb *tokenBuilder) BuildRefreshToken(ctx *RefreshTokenBuildContext) (*oauth
 		ClaimsLocales: ctx.ClaimsLocales,
 	}
 
-	token, iat, err := tb.jwtService.GenerateJWT(
+	token, iat, err := tb.jwtService.GenerateJWTWithKey(
 		ctx.ClientID,
 		tokenConfig.Issuer,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		claims,
 		jwt.TokenTypeJWT,
+		resolveSigningKeyID(ctx.OAuthApp),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate refresh token: %v", err)
@@ -288,13 +298,14 @@ func (tb *tokenBuilder) BuildIDToken(ctx *IDTokenBuildContext) (*oauth2model.Tok
 		Audience:  ctx.Audience,
 	}
 
-	token, iat, err := tb.jwtService.GenerateJWT(
+	token, iat, err := tb.jwtService.GenerateJWTWithKey(
 		ctx.Subject,
 		ctx.Audience,
 		tokenConfig.Issuer,
 		tokenConfig.ValidityPeriod,
 		jwtClaims,
 		jwt.TokenTypeJWT,
+		resolveSigningKeyID(ctx.OAuthApp),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate ID token: %v", err)

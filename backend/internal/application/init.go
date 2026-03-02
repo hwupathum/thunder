@@ -30,6 +30,8 @@ import (
 	flowmgt "github.com/asgardeo/thunder/internal/flow/mgt"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	declarativeresource "github.com/asgardeo/thunder/internal/system/declarative_resource"
+
+	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/middleware"
 	"github.com/asgardeo/thunder/internal/userschema"
 )
@@ -43,13 +45,14 @@ func Initialize(
 	themeMgtService thememgt.ThemeMgtServiceInterface,
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
+	pkiService pki.PKIServiceInterface,
 ) (ApplicationServiceInterface, declarativeresource.ResourceExporter, error) {
 	// Step 1: Initialize store structure (without data)
 	appStore := initializeStore()
 
 	// Step 2: Create service with store
 	appService := newApplicationService(
-		appStore, certService, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
+		appStore, certService, flowMgtService, themeMgtService, layoutMgtService, userSchemaService, pkiService)
 
 	// Step 3: Load declarative resources into store (if applicable)
 	storeMode := getApplicationStoreMode()

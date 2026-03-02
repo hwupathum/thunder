@@ -35,6 +35,7 @@ import (
 	"github.com/asgardeo/thunder/internal/system/config"
 	serverconst "github.com/asgardeo/thunder/internal/system/constants"
 	"github.com/asgardeo/thunder/internal/system/crypto/hash"
+	"github.com/asgardeo/thunder/internal/system/crypto/pki"
 	"github.com/asgardeo/thunder/internal/system/error/serviceerror"
 	"github.com/asgardeo/thunder/internal/system/log"
 	"github.com/asgardeo/thunder/internal/system/security"
@@ -62,6 +63,7 @@ type applicationService struct {
 	themeMgtService   thememgt.ThemeMgtServiceInterface
 	layoutMgtService  layoutmgt.LayoutMgtServiceInterface
 	userSchemaService userschema.UserSchemaServiceInterface
+	pkiService        pki.PKIServiceInterface
 }
 
 // newApplicationService creates a new instance of ApplicationService.
@@ -72,6 +74,7 @@ func newApplicationService(
 	themeMgtService thememgt.ThemeMgtServiceInterface,
 	layoutMgtService layoutmgt.LayoutMgtServiceInterface,
 	userSchemaService userschema.UserSchemaServiceInterface,
+	pkiService pki.PKIServiceInterface,
 ) ApplicationServiceInterface {
 	return &applicationService{
 		appStore:          appStore,
@@ -80,7 +83,20 @@ func newApplicationService(
 		themeMgtService:   themeMgtService,
 		layoutMgtService:  layoutMgtService,
 		userSchemaService: userSchemaService,
+		pkiService:        pkiService,
 	}
+}
+
+// validateSigningKeyID validates that the given key ID exists in the PKI configuration.
+// Returns nil if signingKeyID is empty (falls back to global preferred key).
+func (as *applicationService) validateSigningKeyID(signingKeyID string) *serviceerror.ServiceError {
+	if signingKeyID == "" {
+		return nil
+	}
+	if _, svcErr := as.pkiService.GetPrivateKey(signingKeyID); svcErr != nil {
+		return &ErrorInvalidSigningKeyID
+	}
+	return nil
 }
 
 // CreateApplication creates the application.
@@ -177,6 +193,7 @@ func (as *applicationService) CreateApplication(app *model.ApplicationDTO) (*mod
 				Scopes:                  inboundAuthConfig.OAuthAppConfig.Scopes,
 				UserInfo:                processedDTO.InboundAuthConfig[0].OAuthAppConfig.UserInfo,
 				ScopeClaims:             processedDTO.InboundAuthConfig[0].OAuthAppConfig.ScopeClaims,
+				SigningKeyID:            inboundAuthConfig.OAuthAppConfig.SigningKeyID,
 			},
 		}
 		returnApp.InboundAuthConfig = []model.InboundAuthConfigDTO{returnInboundAuthConfig}
@@ -291,6 +308,7 @@ func (as *applicationService) ValidateApplication(app *model.ApplicationDTO) (
 				Scopes:                  inboundAuthConfig.OAuthAppConfig.Scopes,
 				UserInfo:                userInfo,
 				ScopeClaims:             scopeClaims,
+				SigningKeyID:            inboundAuthConfig.OAuthAppConfig.SigningKeyID,
 			},
 		}
 		processedDTO.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{processedInboundAuthConfig}
@@ -427,6 +445,7 @@ func (as *applicationService) GetApplication(appID string) (*model.Application,
 						Scopes:                  oauthAppConfig.Scopes,
 						UserInfo:                oauthAppConfig.UserInfo,
 						ScopeClaims:             oauthAppConfig.ScopeClaims,
+						SigningKeyID:            oauthAppConfig.SigningKeyID,
 					},
 				})
 			}
@@ -592,6 +611,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 				Scopes:                  inboundAuthConfig.OAuthAppConfig.Scopes,
 				UserInfo:                userInfo,
 				ScopeClaims:             scopeClaims,
+				SigningKeyID:            inboundAuthConfig.OAuthAppConfig.SigningKeyID,
 			},
 		}
 		processedDTO.InboundAuthConfig = []model.InboundAuthConfigProcessedDTO{processedInboundAuthConfig}
@@ -652,6 +672,7 @@ func (as *applicationService) UpdateApplication(appID string, app *model.Applica
 				Scopes:                  inboundAuthConfig.OAuthAppConfig.Scopes,
 				UserInfo:                userInfo,
 				ScopeClaims:             scopeClaims,
+				SigningKeyID:            inboundAuthConfig.OAuthAppConfig.SigningKeyID,
 			},
 		}
 		returnApp.InboundAuthConfig = []model.InboundAuthConfigDTO{returnInboundAuthConfig}
@@ -957,6 +978,11 @@ func (as *applicationService) processInboundAuthConfig(app *model.ApplicationDTO
 				return nil, &ErrorApplicationAlreadyExistsWithClientID
 			}
 		}
+	}
+
+	// Validate signing key ID if provided.
+	if svcErr := as.validateSigningKeyID(inboundAuthConfig.OAuthAppConfig.SigningKeyID); svcErr != nil {
+		return nil, svcErr
 	}
 
 	// Resolve client secret for confidential clients

@@ -127,7 +127,11 @@ func (s *userInfoService) GetUserInfo(
 	}
 
 	if responseType == appmodel.UserInfoResponseTypeJWS {
-		return s.generateJWSUserInfo(sub, tokenClaims, response)
+		var signingKeyID string
+		if oauthApp != nil {
+			signingKeyID = oauthApp.SigningKeyID
+		}
+		return s.generateJWSUserInfo(sub, tokenClaims, response, signingKeyID)
 	}
 
 	return &UserInfoResponse{
@@ -142,6 +146,7 @@ func (s *userInfoService) generateJWSUserInfo(
 	sub string,
 	tokenClaims map[string]interface{},
 	response map[string]interface{},
+	signingKeyID string,
 ) (*UserInfoResponse, *serviceerror.ServiceError) {
 	clientID := ""
 	if cid, ok := tokenClaims["client_id"].(string); ok {
@@ -153,13 +158,14 @@ func (s *userInfoService) generateJWSUserInfo(
 	issuer := runtime.Config.JWT.Issuer
 	validity := runtime.Config.JWT.ValidityPeriod
 
-	signedJWT, _, err := s.jwtService.GenerateJWT(
+	signedJWT, _, err := s.jwtService.GenerateJWTWithKey(
 		sub,
 		clientID,
 		issuer,
 		validity,
 		response,
 		jwt.TokenTypeJWT,
+		signingKeyID,
 	)
 	if err != nil {
 		s.logger.Error("Failed to generate signed UserInfo JWT")

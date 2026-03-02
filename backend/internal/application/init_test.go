@@ -89,6 +89,7 @@ func (suite *InitTestSuite) TestInitialize_WithDeclarativeResourcesDisabled() {
 		nil, // themeMgtService - not needed for this test
 		nil, // layoutMgtService - not needed for this test
 		suite.mockUserSchemaService,
+		nil, // pkiService - not needed for this test
 	)
 
 	// Assert
@@ -126,6 +127,7 @@ func (suite *InitTestSuite) TestInitialize_WithMCPServer() {
 		nil, // themeMgtService - not needed for this test
 		nil, // layoutMgtService - not needed for this test
 		suite.mockUserSchemaService,
+		nil, // pkiService - not needed for this test
 	)
 
 	// Assert
@@ -521,6 +523,7 @@ func TestInitialize_Standalone(t *testing.T) {
 		nil, // themeMgtService - not needed for this test
 		nil, // layoutMgtService - not needed for this test
 		mockUserSchemaService,
+		nil, // pkiService - not needed for this test
 	)
 
 	// Assert
@@ -568,6 +571,7 @@ func TestInitialize_WithDeclarativeResources_Standalone(t *testing.T) {
 		nil, // themeMgtService - not needed for this test
 		nil, // layoutMgtService - not needed for this test
 		mockUserSchemaService,
+		nil, // pkiService - not needed for this test
 	)
 
 	// Assert

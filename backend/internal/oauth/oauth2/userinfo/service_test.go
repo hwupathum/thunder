@@ -1164,11 +1164,12 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_ResponseType() {
 
 	// JWT generation
 	s.mockJWTService.On(
-		"GenerateJWT",
+		"GenerateJWTWithKey",
 		"user123",
 		"client123",
 		issuer,
 		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
+		mock.Anything,
 		mock.Anything,
 		mock.Anything,
 	).Return("signed.jwt.token", int64(0), nil)
@@ -1225,11 +1226,12 @@ func (s *UserInfoServiceTestSuite) TestGetUserInfo_JWS_GenerateJWTFailure() {
 
 	// Simulate signing failure
 	s.mockJWTService.On(
-		"GenerateJWT",
+		"GenerateJWTWithKey",
 		"user123",
 		"client123",
 		issuer,
 		config.GetThunderRuntime().Config.JWT.ValidityPeriod,
+		mock.Anything,
 		mock.Anything,
 		mock.Anything,
 	).Return("", int64(0),

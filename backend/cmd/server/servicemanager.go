@@ -194,7 +194,7 @@ func registerServices(mux *http.ServeMux) jwt.JWTServiceInterface {
 	exporters = append(exporters, layoutExporter)
 
 	applicationService, applicationExporter, err := application.Initialize(
-		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService, userSchemaService)
+		mux, mcpServer, certservice, flowMgtService, themeMgtService, layoutMgtService, userSchemaService, pkiService)
 	if err != nil {
 		logger.Fatal("Failed to initialize ApplicationService", log.Error(err))
 	}

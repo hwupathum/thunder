@@ -44,8 +44,10 @@ import (
 
 // JWTServiceInterface defines the interface for JWT operations.
 type JWTServiceInterface interface {
-	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{}, typ string) (
-		string, int64, *serviceerror.ServiceError)
+	GenerateJWT(sub, aud, iss string, validityPeriod int64, claims map[string]interface{},
+		typ string) (string, int64, *serviceerror.ServiceError)
+	GenerateJWTWithKey(sub, aud, iss string, validityPeriod int64, claims map[string]interface{},
+		typ string, signingKeyID string) (string, int64, *serviceerror.ServiceError)
 	VerifyJWT(jwtToken string, expectedAud, expectedIss string) *serviceerror.ServiceError
 	VerifyJWTWithPublicKey(jwtToken string, jwtPublicKey crypto.PublicKey, expectedAud,
 		expectedIss string) *serviceerror.ServiceError
@@ -61,81 +63,109 @@ type jwtService struct {
 	signAlg    sign.SignAlgorithm
 	jwsAlg     jws.Algorithm
 	kid        string
+	pkiService pki.PKIServiceInterface
 	logger     *log.Logger
 }
 
+// resolveSigningParams derives the JWS algorithm, sign algorithm, and certificate thumbprint (kid)
+// from a private key, using pkiService to retrieve the thumbprint for the given configKeyID.
+func resolveSigningParams(
+	privateKey crypto.PrivateKey,
+	configKeyID string,
+	pkiService pki.PKIServiceInterface,
+) (jws.Algorithm, sign.SignAlgorithm, string, error) {
+	kid := pkiService.GetCertThumbprint(configKeyID)
+	switch k := privateKey.(type) {
+	case *rsa.PrivateKey:
+		_ = k
+		return jws.RS256, sign.RSASHA256, kid, nil
+	case *ecdsa.PrivateKey:
+		crvName := k.Curve.Params().Name
+		switch crvName {
+		case jws.P256:
+			return jws.ES256, sign.ECDSASHA256, kid, nil
+		case jws.P384:
+			return jws.ES384, sign.ECDSASHA384, kid, nil
+		case jws.P521:
+			return jws.ES512, sign.ECDSASHA512, kid, nil
+		default:
+			return "", "", "", errors.New("unsupported EC curve: " + crvName +
+				" only P-256, P-384 and P-521 are supported")
+		}
+	case ed25519.PrivateKey:
+		_ = k
+		return jws.EdDSA, sign.ED25519, kid, nil
+	default:
+		return "", "", "", errors.New("unsupported private key type")
+	}
+}
+
 // newJWTService creates a new JWT service instance.
-func newJWTService(pkiService pki.PKIServiceInterface) (JWTServiceInterface, error) {
+func newJWTService(pkiSvc pki.PKIServiceInterface) (JWTServiceInterface, error) {
 	preferredKid := config.GetThunderRuntime().Config.JWT.PreferredKeyID
 
-	privateKey, err := pkiService.GetPrivateKey(preferredKid)
+	privateKey, err := pkiSvc.GetPrivateKey(preferredKid)
 	if err != nil {
 		return nil, errors.New("failed to retrieve private key for the key id: " + preferredKid)
 	}
 
-	kid := pkiService.GetCertThumbprint(preferredKid)
 	logger := log.GetLogger().With(log.String(log.LoggerKeyComponentName, "JWTService"))
 
-	// Get algorithm based on the type of private key
-	switch k := privateKey.(type) {
-	case *rsa.PrivateKey:
-		return &jwtService{
-			privateKey: k,
-			signAlg:    sign.RSASHA256,
-			jwsAlg:     jws.RS256,
-			kid:        kid,
-			logger:     logger,
-		}, nil
-	case *ecdsa.PrivateKey:
-		// Determine ECDSA algorithm based on curve
-		crvName := k.Curve.Params().Name
-		switch crvName {
-		case jws.P256:
-			return &jwtService{
-				privateKey: k,
-				signAlg:    sign.ECDSASHA256,
-				jwsAlg:     jws.ES256,
-				kid:        kid,
-				logger:     logger,
-			}, nil
-		case jws.P384:
-			return &jwtService{
-				privateKey: k,
-				signAlg:    sign.ECDSASHA384,
-				jwsAlg:     jws.ES384,
-				kid:        kid,
-				logger:     logger,
-			}, nil
-		case jws.P521:
-			return &jwtService{
-				privateKey: k,
-				signAlg:    sign.ECDSASHA512,
-				jwsAlg:     jws.ES512,
-				kid:        kid,
-				logger:     logger,
-			}, nil
-		default:
-			return nil, errors.New("unsupported EC curve: " + crvName + " only P-256, P-384 and P-521 are supported")
-		}
-	case ed25519.PrivateKey:
-		return &jwtService{
-			privateKey: k,
-			signAlg:    sign.ED25519,
-			jwsAlg:     jws.EdDSA,
-			kid:        kid,
-			logger:     logger,
-		}, nil
-	default:
-		return nil, errors.New("unsupported private key type")
+	jwsAlg, signAlg, kid, resolveErr := resolveSigningParams(privateKey, preferredKid, pkiSvc)
+	if resolveErr != nil {
+		return nil, resolveErr
 	}
+
+	return &jwtService{
+		privateKey: privateKey,
+		signAlg:    signAlg,
+		jwsAlg:     jwsAlg,
+		kid:        kid,
+		pkiService: pkiSvc,
+		logger:     logger,
+	}, nil
 }
 
-// GenerateJWT generates a standard JWT signed with the server's private key.
+// GenerateJWT generates a standard JWT signed with the server's default private key.
 // The typ parameter sets the JWT header "typ" field. If empty, defaults to "JWT".
 func (js *jwtService) GenerateJWT(
 	sub, aud, iss string, validityPeriod int64, claims map[string]interface{}, typ string,
 ) (string, int64, *serviceerror.ServiceError) {
-	if js.privateKey == nil {
+	return js.GenerateJWTWithKey(sub, aud, iss, validityPeriod, claims, typ, "")
+}
+
+// GenerateJWTWithKey generates a JWT signed with the specified key from crypto.keys.
+// If signingKeyID is empty, falls back to the server's default key (jwt.preferred_key_id).
+// The typ parameter sets the JWT header "typ" field. If empty, defaults to "JWT".
+func (js *jwtService) GenerateJWTWithKey(
+	sub, aud, iss string, validityPeriod int64, claims map[string]interface{}, typ string,
+	signingKeyID string,
+) (string, int64, *serviceerror.ServiceError) {
+	// Resolve the key materials to use for signing.
+	privateKey := js.privateKey
+	jwsAlg := js.jwsAlg
+	signAlg := js.signAlg
+	kid := js.kid
+
+	if signingKeyID != "" && js.pkiService != nil {
+		appKey, svcErr := js.pkiService.GetPrivateKey(signingKeyID)
+		if svcErr != nil {
+			js.logger.Error("Failed to retrieve per-app signing key",
+				log.String("signingKeyID", signingKeyID))
+			return "", 0, &serviceerror.InternalServerError
+		}
+		appJWSAlg, appSignAlg, appKid, err := resolveSigningParams(appKey, signingKeyID, js.pkiService)
+		if err != nil {
+			js.logger.Error("Unsupported per-app key type: " + err.Error())
+			return "", 0, &serviceerror.InternalServerError
+		}
+		privateKey = appKey
+		jwsAlg = appJWSAlg
+		signAlg = appSignAlg
+		kid = appKid
+	}
+
+	if privateKey == nil {
 		js.logger.Error("Private key not found for JWT generation")
 		return "", 0, &serviceerror.InternalServerError
 	}
@@ -146,9 +176,9 @@ func (js *jwtService) GenerateJWT(
 		typ = TokenTypeJWT
 	}
 	header := map[string]string{
-		"alg": string(js.jwsAlg),
+		"alg": string(jwsAlg),
 		"typ": typ,
-		"kid": js.kid,
+		"kid": kid,
 	}
 
 	headerJSON, err := json.Marshal(header)
@@ -205,7 +235,7 @@ func (js *jwtService) GenerateJWT(
 
 	// Create the signing input and sign it with the private key.
 	signingInput := headerBase64 + "." + payloadBase64
-	signature, err := sign.Generate([]byte(signingInput), js.signAlg, js.privateKey)
+	signature, err := sign.Generate([]byte(signingInput), signAlg, privateKey)
 	if err != nil {
 		js.logger.Error("Failed to sign JWT: " + err.Error())
 		return "", 0, &serviceerror.InternalServerError

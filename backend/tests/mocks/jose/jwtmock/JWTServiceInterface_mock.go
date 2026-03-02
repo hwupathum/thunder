@@ -136,6 +136,110 @@ func (_c *JWTServiceInterfaceMock_GenerateJWT_Call) RunAndReturn(run func(sub st
 	return _c
 }
 
+// GenerateJWTWithKey provides a mock function for the type JWTServiceInterfaceMock
+func (_mock *JWTServiceInterfaceMock) GenerateJWTWithKey(sub string, aud string, iss string, validityPeriod int64, claims map[string]interface{}, typ string, signingKeyID string) (string, int64, *serviceerror.ServiceError) {
+	ret := _mock.Called(sub, aud, iss, validityPeriod, claims, typ, signingKeyID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GenerateJWTWithKey")
+	}
+
+	var r0 string
+	var r1 int64
+	var r2 *serviceerror.ServiceError
+	if returnFunc, ok := ret.Get(0).(func(string, string, string, int64, map[string]interface{}, string, string) (string, int64, *serviceerror.ServiceError)); ok {
+		return returnFunc(sub, aud, iss, validityPeriod, claims, typ, signingKeyID)
+	}
+	if returnFunc, ok := ret.Get(0).(func(string, string, string, int64, map[string]interface{}, string, string) string); ok {
+		r0 = returnFunc(sub, aud, iss, validityPeriod, claims, typ, signingKeyID)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+	if returnFunc, ok := ret.Get(1).(func(string, string, string, int64, map[string]interface{}, string, string) int64); ok {
+		r1 = returnFunc(sub, aud, iss, validityPeriod, claims, typ, signingKeyID)
+	} else {
+		r1 = ret.Get(1).(int64)
+	}
+	if returnFunc, ok := ret.Get(2).(func(string, string, string, int64, map[string]interface{}, string, string) *serviceerror.ServiceError); ok {
+		r2 = returnFunc(sub, aud, iss, validityPeriod, claims, typ, signingKeyID)
+	} else {
+		if ret.Get(2) != nil {
+			r2 = ret.Get(2).(*serviceerror.ServiceError)
+		}
+	}
+	return r0, r1, r2
+}
+
+// JWTServiceInterfaceMock_GenerateJWTWithKey_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GenerateJWTWithKey'
+type JWTServiceInterfaceMock_GenerateJWTWithKey_Call struct {
+	*mock.Call
+}
+
+// GenerateJWTWithKey is a helper method to define mock.On call
+//   - sub string
+//   - aud string
+//   - iss string
+//   - validityPeriod int64
+//   - claims map[string]interface{}
+//   - typ string
+//   - signingKeyID string
+func (_e *JWTServiceInterfaceMock_Expecter) GenerateJWTWithKey(sub interface{}, aud interface{}, iss interface{}, validityPeriod interface{}, claims interface{}, typ interface{}, signingKeyID interface{}) *JWTServiceInterfaceMock_GenerateJWTWithKey_Call {
+	return &JWTServiceInterfaceMock_GenerateJWTWithKey_Call{Call: _e.mock.On("GenerateJWTWithKey", sub, aud, iss, validityPeriod, claims, typ, signingKeyID)}
+}
+
+func (_c *JWTServiceInterfaceMock_GenerateJWTWithKey_Call) Run(run func(sub string, aud string, iss string, validityPeriod int64, claims map[string]interface{}, typ string, signingKeyID string)) *JWTServiceInterfaceMock_GenerateJWTWithKey_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 string
+		if args[0] != nil {
+			arg0 = args[0].(string)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 int64
+		if args[3] != nil {
+			arg3 = args[3].(int64)
+		}
+		var arg4 map[string]interface{}
+		if args[4] != nil {
+			arg4 = args[4].(map[string]interface{})
+		}
+		var arg5 string
+		if args[5] != nil {
+			arg5 = args[5].(string)
+		}
+		var arg6 string
+		if args[6] != nil {
+			arg6 = args[6].(string)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+			arg4,
+			arg5,
+			arg6,
+		)
+	})
+	return _c
+}
+
+func (_c *JWTServiceInterfaceMock_GenerateJWTWithKey_Call) Return(s string, n int64, serviceError *serviceerror.ServiceError) *JWTServiceInterfaceMock_GenerateJWTWithKey_Call {
+	_c.Call.Return(s, n, serviceError)
+	return _c
+}
+
+func (_c *JWTServiceInterfaceMock_GenerateJWTWithKey_Call) RunAndReturn(run func(sub string, aud string, iss string, validityPeriod int64, claims map[string]interface{}, typ string, signingKeyID string) (string, int64, *serviceerror.ServiceError)) *JWTServiceInterfaceMock_GenerateJWTWithKey_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // VerifyJWT provides a mock function for the type JWTServiceInterfaceMock
 func (_mock *JWTServiceInterfaceMock) VerifyJWT(jwtToken string, expectedAud string, expectedIss string) *serviceerror.ServiceError {
 	ret := _mock.Called(jwtToken, expectedAud, expectedIss)

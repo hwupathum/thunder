@@ -21,6 +21,11 @@ import (
 // paramLogoutID is the gate query/callback parameter carrying the stored logout-request id.
 const paramLogoutID = "logoutId"
 
+// logoutCallbackRequest is the request body posted by the Gate UI to the sign-out callback endpoint.
+type logoutCallbackRequest struct {
+	LogoutID string `json:"logoutId" native:"required"`
+}
+
 // logoutHandler serves the RP-initiated logout endpoint. It validates the request, persists the
 // validated post-logout target server-side, initiates the application's sign-out flow, and redirects the
 // browser to the gate sign-out page to run the flow (confirmation + session termination). The gate
@@ -103,10 +108,8 @@ func (h *logoutHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 // sign-out flow finishes; the server consumes the stored request (running any protocol-level actions)
 // and returns the post-logout redirect URI for the browser to land on.
 func (h *logoutHandler) HandleLogoutCallback(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		LogoutID string `json:"logoutId"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.LogoutID == "" {
+	body, err := sysutils.DecodeJSONBody[logoutCallbackRequest](r)
+	if err != nil {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}

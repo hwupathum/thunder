@@ -6,6 +6,7 @@ package logout
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -20,6 +21,10 @@ import (
 
 // paramLogoutID is the gate query/callback parameter carrying the stored logout-request id.
 const paramLogoutID = "logoutId"
+
+// maxLogoutCallbackBodyBytes bounds the sign-out callback body to prevent unbounded memory use
+// from oversized or streamed (chunked) request bodies.
+const maxLogoutCallbackBodyBytes = 1 << 20 // 1 MiB
 
 // logoutHandler serves the RP-initiated logout endpoint. It validates the request, persists the
 // validated post-logout target server-side, initiates the application's sign-out flow, and redirects the
@@ -106,7 +111,7 @@ func (h *logoutHandler) HandleLogoutCallback(w http.ResponseWriter, r *http.Requ
 	var body struct {
 		LogoutID string `json:"logoutId"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.LogoutID == "" {
+	if err := json.NewDecoder(io.LimitReader(r.Body, maxLogoutCallbackBodyBytes)).Decode(&body); err != nil || body.LogoutID == "" {
 		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}

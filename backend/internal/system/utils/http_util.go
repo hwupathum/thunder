@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -78,10 +79,14 @@ type ValidationError struct {
 
 func (e *ValidationError) Error() string { return "Validation Failed" }
 
+// maxJSONBodyBytes bounds JSON request bodies decoded via DecodeJSONBody to prevent unbounded
+// memory use from oversized or streamed (chunked) request bodies.
+const maxJSONBodyBytes = 1 << 20 // 1 MiB
+
 // DecodeJSONBody decodes JSON from the request body into any struct type T.
 func DecodeJSONBody[T any](r *http.Request) (*T, error) {
 	var data T
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(io.LimitReader(r.Body, maxJSONBodyBytes)).Decode(&data); err != nil {
 		return nil, errors.New("failed to decode JSON: " + err.Error())
 	}
 	if fieldErrors := validateStructNatively(data); fieldErrors != nil {

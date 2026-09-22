@@ -17,10 +17,19 @@ func NewHandleTransportMock(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *HandleTransportMock {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &HandleTransportMock{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -52,7 +61,7 @@ type HandleTransportMock_Clear_Call struct {
 // Clear is a helper method to define mock.On call
 //   - w http.ResponseWriter
 //   - cookieName string
-func (_e *HandleTransportMock_Expecter) Clear(w interface{}, cookieName interface{}) *HandleTransportMock_Clear_Call {
+func (_e *HandleTransportMock_Expecter) Clear(w any, cookieName any) *HandleTransportMock_Clear_Call {
 	return &HandleTransportMock_Clear_Call{Call: _e.mock.On("Clear", w, cookieName)}
 }
 
@@ -108,7 +117,7 @@ type HandleTransportMock_Read_Call struct {
 
 // Read is a helper method to define mock.On call
 //   - r *http.Request
-func (_e *HandleTransportMock_Expecter) Read(r interface{}) *HandleTransportMock_Read_Call {
+func (_e *HandleTransportMock_Expecter) Read(r any) *HandleTransportMock_Read_Call {
 	return &HandleTransportMock_Read_Call{Call: _e.mock.On("Read", r)}
 }
 
@@ -151,7 +160,7 @@ type HandleTransportMock_Write_Call struct {
 //   - cookieName string
 //   - handle string
 //   - ttl time.Duration
-func (_e *HandleTransportMock_Expecter) Write(w interface{}, cookieName interface{}, handle interface{}, ttl interface{}) *HandleTransportMock_Write_Call {
+func (_e *HandleTransportMock_Expecter) Write(w any, cookieName any, handle any, ttl any) *HandleTransportMock_Write_Call {
 	return &HandleTransportMock_Write_Call{Call: _e.mock.On("Write", w, cookieName, handle, ttl)}
 }
 

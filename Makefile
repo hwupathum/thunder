@@ -32,8 +32,8 @@ I18N_EXTRACTOR_GOLANGCI_LINT ?= $(I18N_EXTRACTOR_TOOL_BIN)/golangci-lint
 CLI_E2E_DIR := $(realpath $(dir $(abspath $(lastword $(MAKEFILE_LIST)))))/tests/e2e-cli
 
 # Tools versions
-GOLANGCI_LINT_VERSION ?= v1.64.8
-MOCKERY_VERSION ?= v3.5.5
+GOLANGCI_LINT_VERSION ?= v2.14.0
+MOCKERY_VERSION ?= v3.8.0
 
 $(TOOL_BIN):
 	mkdir -p $(TOOL_BIN)
@@ -297,13 +297,13 @@ endef
 golangci-lint: $(GOLANGCI_LINT)
 
 $(GOLANGCI_LINT): $(TOOL_BIN)
-	$(call go_install_tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
+	$(call go_install_tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,$(GOLANGCI_LINT_VERSION))
 
 $(CLI_GOLANGCI_LINT): $(CLI_TOOL_BIN)
-	cd /tmp && GOBIN=$(CLI_TOOL_BIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	cd /tmp && GOBIN=$(CLI_TOOL_BIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 $(I18N_EXTRACTOR_GOLANGCI_LINT): $(I18N_EXTRACTOR_TOOL_BIN)
-	cd /tmp && GOBIN=$(I18N_EXTRACTOR_TOOL_BIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	cd /tmp && GOBIN=$(I18N_EXTRACTOR_TOOL_BIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 install-mockery: $(MOCKERY)
 

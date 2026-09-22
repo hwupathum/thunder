@@ -16,10 +16,19 @@ func newTemplateStoreInterfaceMock(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *templateStoreInterfaceMock {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &templateStoreInterfaceMock{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -73,7 +82,7 @@ type templateStoreInterfaceMock_GetTemplate_Call struct {
 // GetTemplate is a helper method to define mock.On call
 //   - ctx context.Context
 //   - id string
-func (_e *templateStoreInterfaceMock_Expecter) GetTemplate(ctx interface{}, id interface{}) *templateStoreInterfaceMock_GetTemplate_Call {
+func (_e *templateStoreInterfaceMock_Expecter) GetTemplate(ctx any, id any) *templateStoreInterfaceMock_GetTemplate_Call {
 	return &templateStoreInterfaceMock_GetTemplate_Call{Call: _e.mock.On("GetTemplate", ctx, id)}
 }
 
@@ -142,7 +151,7 @@ type templateStoreInterfaceMock_GetTemplateByScenario_Call struct {
 //   - ctx context.Context
 //   - scenario ScenarioType
 //   - tmplType TemplateType
-func (_e *templateStoreInterfaceMock_Expecter) GetTemplateByScenario(ctx interface{}, scenario interface{}, tmplType interface{}) *templateStoreInterfaceMock_GetTemplateByScenario_Call {
+func (_e *templateStoreInterfaceMock_Expecter) GetTemplateByScenario(ctx any, scenario any, tmplType any) *templateStoreInterfaceMock_GetTemplateByScenario_Call {
 	return &templateStoreInterfaceMock_GetTemplateByScenario_Call{Call: _e.mock.On("GetTemplateByScenario", ctx, scenario, tmplType)}
 }
 
@@ -214,7 +223,7 @@ type templateStoreInterfaceMock_ListTemplates_Call struct {
 
 // ListTemplates is a helper method to define mock.On call
 //   - ctx context.Context
-func (_e *templateStoreInterfaceMock_Expecter) ListTemplates(ctx interface{}) *templateStoreInterfaceMock_ListTemplates_Call {
+func (_e *templateStoreInterfaceMock_Expecter) ListTemplates(ctx any) *templateStoreInterfaceMock_ListTemplates_Call {
 	return &templateStoreInterfaceMock_ListTemplates_Call{Call: _e.mock.On("ListTemplates", ctx)}
 }
 

@@ -17,10 +17,19 @@ func NewTemplateServiceInterfaceMock(t interface {
 	mock.TestingT
 	Cleanup(func())
 }) *TemplateServiceInterfaceMock {
+	if helper, ok := t.(interface{ Helper() }); ok {
+		helper.Helper()
+	}
+
 	mock := &TemplateServiceInterfaceMock{}
 	mock.Mock.Test(t)
 
-	t.Cleanup(func() { mock.AssertExpectations(t) })
+	t.Cleanup(func() {
+		if helper, ok := t.(interface{ Helper() }); ok {
+			helper.Helper()
+		}
+		mock.AssertExpectations(t)
+	})
 
 	return mock
 }
@@ -77,7 +86,7 @@ type TemplateServiceInterfaceMock_GetTemplateByScenario_Call struct {
 //   - ctx context.Context
 //   - scenario ScenarioType
 //   - tmplType TemplateType
-func (_e *TemplateServiceInterfaceMock_Expecter) GetTemplateByScenario(ctx interface{}, scenario interface{}, tmplType interface{}) *TemplateServiceInterfaceMock_GetTemplateByScenario_Call {
+func (_e *TemplateServiceInterfaceMock_Expecter) GetTemplateByScenario(ctx any, scenario any, tmplType any) *TemplateServiceInterfaceMock_GetTemplateByScenario_Call {
 	return &TemplateServiceInterfaceMock_GetTemplateByScenario_Call{Call: _e.mock.On("GetTemplateByScenario", ctx, scenario, tmplType)}
 }
 
@@ -154,7 +163,7 @@ type TemplateServiceInterfaceMock_Render_Call struct {
 //   - scenario ScenarioType
 //   - tmplType TemplateType
 //   - data TemplateData
-func (_e *TemplateServiceInterfaceMock_Expecter) Render(ctx interface{}, scenario interface{}, tmplType interface{}, data interface{}) *TemplateServiceInterfaceMock_Render_Call {
+func (_e *TemplateServiceInterfaceMock_Expecter) Render(ctx any, scenario any, tmplType any, data any) *TemplateServiceInterfaceMock_Render_Call {
 	return &TemplateServiceInterfaceMock_Render_Call{Call: _e.mock.On("Render", ctx, scenario, tmplType, data)}
 }
 
